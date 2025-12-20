@@ -7,8 +7,8 @@
 
 int main()
 {
-    int iRet = symlink("./DemoX.txt" , "./Hello.txt");
-                                        // Dangling link
+    int iRet = symlink("./LSP.txt" , "./test/LSPl.txt");
+                                        
     if(iRet == 0)
     {
         printf("Symbolic link is successful\n");

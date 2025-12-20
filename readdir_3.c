@@ -1,0 +1,32 @@
+#include<stdio.h>
+#include<unistd.h>
+#include<fcntl.h>
+#include<string.h>
+#include<errno.h>
+#include<sys/stat.h>
+#include<dirent.h>                  // Directory Entry
+#include<sys/types.h>               // for DIR
+
+int main()
+{
+    DIR *dp = NULL;
+    struct dirent *ptr = NULL;
+    
+    dp = opendir("./Data");             // read only 
+
+    if(dp == NULL)
+    {
+        printf("%s\n",strerror(errno));
+        return -1;
+    }
+
+    while(ptr = readdir(dp))
+    {
+        // fd = open(ptr->dname , O_RDONLY);
+        
+    }
+
+    closedir(dp);
+
+    return 0;
+}

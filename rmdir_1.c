@@ -2,16 +2,17 @@
 #include<unistd.h>
 #include<fcntl.h>
 #include<string.h>
-#include<sys/stat.h>
 #include<errno.h>
+#include<sys/stat.h>
 
 int main()
 {
-    int iRet = symlink("./DemoX.txt" , "./Hello.txt");
-                                        // Dangling link
+    int iRet = 0;
+    iRet = rmdir("./Data");                     // deletes directory only when directory is empty (without any file or data)
+
     if(iRet == 0)
     {
-        printf("Symbolic link is successful\n");
+        printf("Directory gets Deleted  \n");
     }
     else
     {
