@@ -48,7 +48,8 @@ Memory Management
     calloc()
     realloc()
     free()
-
+    mmap()
+    munmap()
 
 Process Subsystem
     fork()
@@ -65,6 +66,17 @@ Process Subsystem
     nice()
     getpriority()
     setpriority()
+
+    mkfifo()
+    pipe()
+    shmget()
+    shmat()
+    shmdt()
+    msgget()
+    msgsnd()
+    msgrcv()
+    signal()
+    kill()
 
 
 
@@ -168,6 +180,93 @@ brk()    -> return address after allocation or end of memory allocated
 
 pointer arithematic not allowed for void * type
 
+
+process pid  -> used for communication with os & other process
+
+o.s. boooting -> real mode
+after some time after booting it gets shifted to protected mode
+
+real mode -> only process running
+protected mode -> multiple process running
+
+mode changes behaviour of os
+
+real mode -> weak state
+protected mode -> strong state
+
+process scheduler -> schedules process at proper time
+
+(Mode switch)
+start -> real mode      -> protected mode       -> real mode -> end
+        (single process)   (multiple processes)
+
+
+
+Address bus(64 bit  , 2^64) capacity matters not ram capacity
+
+dont call me i will call you    -> real mode , os observes the single process
+
+call me when you need me  -> system call
+
+
+process communication between process of diffrent machines is only posible by socket 
+
+* IPC can be performed by 
+    
+1. named pipe       (frequently used)   (created on ram gets directory entry stored on HDD)
+2. unnamed pipe     (temporarily used) (only on ram)        (both named & unnamed pipe stored data is wiped or cleaned after some time)
+3. shared memory        -> kernel not totally involved (1 page (shared memory) common btw two process)
+4. message queue        -> kernel involved
+5. signals
+6. socket
+
+1 to 6 -> same pc
+6 (socket) -> different pc
+
+max pipe size -> 10 kb
+
+duplex pipe -> both ends used for sendind & receiving data 
+once data is read from pipe , pipe becomes empty
+
+
+creator of shared memory and first writer to shared memory is -> server
+first reader of shared memory -> client
+
+unnamed pipe can be deleted when process which uses it is terminated
+
+
+PIPE System calls -
+
+1. mkfifo() -> create named pipe (special file) (10 kb) (any process can communicate)
+2. mknode() -> create node
+3. pipe()   -> unnamed pipe (10 kb) (only related process(parent child) can communicate)
+
+Shared Memory system calls - 
+
+4. shmget() -> 
+5. shmat()  ->
+6. shmdt()  -> 
+
+Message Queue system calls -
+
+7. msgget()
+8. msgsnd()
+9. msgrcv()
+
+
+signal -> no actual data is passed but an indicator 
+
+Signal system calls - 
+
+10. signal()
+11. kill()      
+
+
+Randomization is not allowed in pipes -> random access to pipe(lseek not allowed)
+
+in HDD space is given to pipe device , size -> 256 pipes only in unix
+
+only name of named pipe is preserved its data is lost
 
 
 */
