@@ -1,0 +1,1 @@
+Text gets written into sample.txt
