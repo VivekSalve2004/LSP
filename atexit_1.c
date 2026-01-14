@@ -13,7 +13,6 @@ void gun()
 }
 
 
-
 int main()
 {
     printf("Process is created \n");
