@@ -14,6 +14,8 @@ int main()
     {
         printf("Files gets succesfully created with fd : %d\n",fd);
     }
+
     close(fd);
+    
     return 0;
 }
