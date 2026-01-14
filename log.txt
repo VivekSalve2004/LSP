@@ -1,0 +1,2 @@
+1
+This text is now redirected to the file using dup3!
