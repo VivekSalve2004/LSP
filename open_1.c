@@ -4,7 +4,7 @@
 int main()
 {
     int fd = 0;
-    fd = open("First.c",O_RDWR);
+    fd = open("First1.c",O_RDWR);
 
     if(fd == -1)
     {
