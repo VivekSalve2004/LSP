@@ -3,3 +3,9 @@ pipe
 pipeclient
 pipeserver
 a.out
+client
+server
+reader
+writer
+sender
+receiver

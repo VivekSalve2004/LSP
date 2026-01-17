@@ -241,13 +241,13 @@ PIPE System calls -
 2. mknode() -> create node
 3. pipe()   -> unnamed pipe (10 kb) (only related process(parent child) can communicate)
 
-Shared Memory system calls - 
+Shared Memory system calls - (fastest memory , not going to kernel)
 
-4. shmget() -> 
+4. shmget() ->   
 5. shmat()  ->
 6. shmdt()  -> 
 
-Message Queue system calls -
+Message Queue system calls - (using kernel)
 
 7. msgget()
 8. msgsnd()
@@ -256,9 +256,9 @@ Message Queue system calls -
 
 signal -> no actual data is passed but an indicator 
 
-Signal system calls - 
+Signal system calls -   (kernel involved)
 
-10. signal()
+10. signal()    -> inbuilt signals , user defined signals
 11. kill()      
 
 
@@ -267,6 +267,30 @@ Randomization is not allowed in pipes -> random access to pipe(lseek not allowed
 in HDD space is given to pipe device , size -> 256 pipes only in unix
 
 only name of named pipe is preserved its data is lost
+
+in case of pipe -> blocking I/O
+in case of regular file -> non-blocking I/O
+
+
+ls | wc -l
+
+./writer | ./reader
+
+$ gcc pipewriter.c -o writer
+$ ./writer
+Jay Ganesh...
+$ gcc pipereader.c -o reader
+$ ./reader
+Pune
+Data received : Pune
+$ ./writer | ./reader
+Data received : Jay Ganesh...
+
+vivek@vivek-Zenbook-Flip-UP3404VA-UP3404VA:~/Desktop/LSP_Applications$ ./myexe
+PID is : 19468
+
+vivek@vivek-Zenbook-Flip-UP3404VA-UP3404VA:~/Desktop/LSP_Applications$ kill -SIGINT 19468
+
 
 
 */
