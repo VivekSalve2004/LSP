@@ -286,11 +286,29 @@ Data received : Pune
 $ ./writer | ./reader
 Data received : Jay Ganesh...
 
-vivek@vivek-Zenbook-Flip-UP3404VA-UP3404VA:~/Desktop/LSP_Applications$ ./myexe
+$ ./myexe
 PID is : 19468
 
-vivek@vivek-Zenbook-Flip-UP3404VA-UP3404VA:~/Desktop/LSP_Applications$ kill -SIGINT 19468
+$ kill -SIGINT 19468
 
 
+Multitasking - 
+
+1. Multiprocessing
+2. Multitasking
+
+only fork -> lightweight process (Thread)
+both fork & exec -> process 
+
+linker -> libc obj + pthread obj
+
+void does not perform pointer arithematic 
+
+
+gcc demo.c -pthread
+gcc demo.c -lpthread
+
+I/O bound -> multithreading
+CPU Extensive -> multiprocessing
 
 */
