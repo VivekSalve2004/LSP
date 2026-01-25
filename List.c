@@ -311,4 +311,17 @@ gcc demo.c -lpthread
 I/O bound -> multithreading
 CPU Extensive -> multiprocessing
 
+gcc -fPIC -shared -o libclient_1.so client_1.c
+
+gcc server_1.c -o server_1 -ldl
+
+// gcc -c client_1.c -o client_1.o
+// ar rcs libclient_1.a client_1.o
+
+ar  - archiac utility
+rcs - replace create symbol index
+
+
+
+
 */
