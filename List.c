@@ -321,6 +321,39 @@ gcc server_1.c -o server_1 -ldl
 ar  - archiac utility
 rcs - replace create symbol index
 
+You can check for them using:
+ipcs -m (for shared memory)
+ipcs -q (for message queues)
+
+And remove them with:
+ipcrm -m <shmid>
+
+ROOT -> '/' -> inode no -> 1
+fsck
+vieditor
+
+
+makefile only on linux distros
+makefile -> build Automation
+
+smart approach of makefile -> builds only changed files
+
+target : dependency
+    recipe
+
+GPL -> GNU Public License    
+    
+every device driver is a kernel module
+
+
+Kernel extensions 
+Device Driver
+
+
+Kernel Diary -> sudo dmesg
+lsmod -> all active device drivers fed to kernel module for working
+
+uname -r
 
 
 
