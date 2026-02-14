@@ -355,19 +355,25 @@ Kernel Diary -> sudo dmesg
 lsmod -> all active device drivers fed to kernel module for working
 
 uname -r
-
-
 FTP Server Project - 
-
 ioctl lock
 
 
 
+linux command suite - 
 
 
 
 
 
+
+hexdump
+
+pe (Portable executable) file format -> windows
+
+4D 5A
+
+hexdump ./cpx -b
 
 
 
