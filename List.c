@@ -375,6 +375,26 @@ pe (Portable executable) file format -> windows
 
 hexdump ./cpx -b
 
+/proc -> ps
+
+find . -name  "*.c"
+
+
+
+Kernel module
+
+sudo insmod KernelModule_1.ko
+
+lsmod   -> name , size
+
+dmesg   -> output of kernel module can be seen
+
+sudo rmmod KernelModule_1
+
+modprob
+
+modinfo Hello.ko > modinfo.txt
+
 
 
 */

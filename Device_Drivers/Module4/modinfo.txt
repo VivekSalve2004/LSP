@@ -1,0 +1,9 @@
+filename:       /home/vivek/Desktop/LSP_Applications/Device_Drivers/Module4/Hello.ko
+description:    It is Marvellous Infosystems Driven
+author:         Vivek Subhash Salve
+license:        GPL
+srcversion:     EAD7426983ACA814B555C79
+depends:        
+name:           Hello
+retpoline:      Y
+vermagic:       6.14.0-37-generic SMP preempt mod_unload modversions 
