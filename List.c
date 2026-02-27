@@ -395,6 +395,29 @@ modprob
 
 modinfo Hello.ko > modinfo.txt
 
+Imp questions -> Device file vs Device Driver
 
+major number -> driver
+
+minor nummber -> device
+
+mknod -> device file
+
+/dev -> all device files
+
+Device file -> major no + minor no
+               (Driver)   (Device)
+
+               
+$ mknod c /dev/tmp 551 11
+        |
+        b
+
+$ ls -l /dev
+
+$ stat /dev/tmp
+
+sudo chmod 666 /dev/marvellous_driver 
+sudo echo "Jay Ganesh..." > /dev/marvellous_driver
 
 */
