@@ -420,4 +420,21 @@ $ stat /dev/tmp
 sudo chmod 666 /dev/marvellous_driver 
 sudo echo "Jay Ganesh..." > /dev/marvellous_driver
 
+
+Mutex -> mutually exclusive
+
+race condition 
+
+try catch , if else -> try catch guarantee , if else not guarantee
+
+mutex lock , boolean flag -> mutex guarantees , flag does not guarantee
+
+semaphore -> protection to critical section
+
+binary semaphore    -> 
+counting semaphore  ->
+
+
+
+
 */
