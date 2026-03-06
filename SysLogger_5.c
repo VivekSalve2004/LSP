@@ -2,6 +2,16 @@
 // ./myexe /home/Demo
 // ./myexe /home/Demo 5
 
+/*
+
+Build:
+    gcc -Wall -Wextra -pthread SysLogger_5.c -o myexe
+
+Run:
+    ./myexe [disk_path] [interval_seconds]    
+
+*/
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //      Header File Inclusion
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,11 +40,10 @@ static void sigint_handler(int sig)
 {
     (void)sig;                              // unused variable sig
 
-    printf("Marvellous System Logger is terminating... \n");
+    write(STDOUT_FILENO , "\n Marvellous System Logger is terminating...\n",44);
 
     // Tell the threads to stop the execution 
     stop_flag = 1;
-
 }
 
 // Structure which holds all system information
@@ -50,7 +59,7 @@ typedef struct
 static Snapshot snap;
 
 // Mutex Lock for critical section
-pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 
 // Default Path for Disk
 static char * disk_path = "/";
@@ -62,34 +71,123 @@ static int interval_sec = 2;
 //      Helper functions definitions
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////////
+//      Timestamp Helper
+////////////////////////////////////////////////////////////////////////////
+
+static void timestamp(char *out , size_t sz)
+{
+    time_t now = time(NULL);
+    struct tm t;
+    localtime_r(&now , &t);
+    strftime(out , sz , "%Y-%m-%d %H:%M:%S" , &t);
+}
+
+////////////////////////////////////////////////////////////////////////////
+//      CPU Helpers (/proc/stat)
+//      CPU % = (delta_total - delta_idle) / delta_total * 100
+////////////////////////////////////////////////////////////////////////////
+
+static int read_cpu(unsigned long long *total , unsigned long long * idle_all)
+{
+    FILE * fp = fopen("/proc/stat" , "r");
+    if(!fp)    return -1;
+
+    char line[512];
+    if(!fgets(line,sizeof(line) , fp))
+    {
+        fclose(fp);
+        return -1;
+    }
+
+    fclose(fp);
+
+    unsigned long long user = 0,nice=0,sys=0,idle=0,iowait=0,irq=0,softirq=0,steal=0;
+
+    int n = sscanf(line , "CPU %llu %llu %llu %llu %llu %llu %llu %llu " , &user,&nice,&sys,&idle,&iowait,&irq,&softirq,&steal);
+
+    if(n < 4)   return -1;
+
+    *idle_all = idle + iowait;
+
+    *total = user + nice + sys + idle + iowait + irq + softirq + steal;
+
+    return 0;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // Function to collect CPU Information 
 ///////////////////////////////////////////////////////////////////////////
 
-static double cpu_percent()
+static double cpu_percent(void)
 {
     // Logic to fetch CPU Information 
-    return 0.0;
+    unsigned long long t1 = 0 , i1 = 0 , t2 = 0 , i2 = 0;
+
+    if(read_cpu(&t1 , &i1) != 0)    return 0.0;
+
+    //NOTE : We measure CPU Delta over 1 second (teaching friendly)
+    for(int i=0 ; i<1 && !stop_flag;i++)  sleep(1);
+
+    if(stop_flag)   return 0.0;
+
+    if(read_cpu(&t2 , &i2) != 0)    return 0.0;
+
+    unsigned long long dt = t2 - t1;
+    unsigned long long di = i2 - i1;
+
+    if(dt == 0)     return 0.0;
+
+    return ((double)(dt - di) / (double)dt) * 100.0;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-// Function to collect Memory Information 
+//      Function to collect Memory Information (/proc/meminfo)
+//      Mem % = (MemTotal - MemAvailable) / MemTotal * 100
 ///////////////////////////////////////////////////////////////////////////
 
-static double mem_percent()
+static double mem_percent(void)
 {
     // Logic to fetch Memory Information 
-    return 0.0;
+    FILE *fp = fopen("/proc/meminfo" , "r");
+    if(!fp) return 0.0;
+
+    unsigned long long total = 0 , avail = 0;
+    char key[64] , unit[32];
+    unsigned long long val = 0;
+
+    while(fscanf(fp , " %63s %llu %31s " , key , &val ,unit) == 3)
+    {
+        if(strcmp(key , "MemTotal:") == 0)  total = val;
+        else if(strcmp(key , "MemAvailable:") == 0)    avail = val;
+
+        if(total && avail)  break;
+    }
+    fclose(fp);
+
+    if(total == 0)  return 0.0;
+    
+    return ((double)(total - avail) / (double)total) * 100;
 }
 
 ///////////////////////////////////////////////////////////////////////////
-// Function to collect Disk Information 
+//      Function to collect Disk Information (statvfs)
+//      Disk %  = (Total - Free) / Total * 100
 ///////////////////////////////////////////////////////////////////////////
 
 static double disk_percent(char *path)
 {
     // Logic to fetch Disk Information 
-    return 0.0;
+
+    struct statvfs v;
+    if(statvfs(path , &v) != 0)     return 0.0;
+
+    unsigned long long total = (unsigned long long)v.f_blocks * (unsigned long long)v.f_frsize;
+    unsigned long long freeb = (unsigned long long)v.f_bavail * (unsigned long long)v.f_frsize;
+
+    if(total == 0)  return 0.0;
+
+    return ((double)(total - freeb) / (double)total) * 100.0;
 }
 
 // Thread proc for Thread which collects system information 
@@ -100,18 +198,17 @@ static void * collector_thread(void *arg)
 
     printf("Inside Collector thread \n");
 
-    
     // Enter if ctrl+c is not arrived 
     while(!stop_flag)
     {
         // Calculate the current resource usage 
+        c = cpu_percent();                          // Includes 1 second measurement sleep
+        if(stop_flag)   break;
 
-        c = cpu_percent();
         m = mem_percent();
         d = disk_percent(disk_path);
 
         // Start the critical section 
-
         pthread_mutex_lock(&mtx);
 
             snap.cpu = c;
@@ -120,30 +217,51 @@ static void * collector_thread(void *arg)
 
         // End of critical section
         pthread_mutex_unlock(&mtx);
-    }
 
+        // No  Extra sleep here . Logger thread controls logging frequency.
+    }
     return NULL;
 }
-
+////////////////////////////////////////////////////////////////////////////////////////////
 // Thread proc for Thread which writes log 
+///////////////////////////////////////////////////////////////////////////////////////////
+
 static void * logger_thread(void *arg)
 {
-    double m = 0.0 , c = 0.0 , d = 0.0;
     (void)arg;
 
     printf("Inside Logger thread \n");
 
     int fd = 0;
-    int i = 0;
-
     fd = open("Marvellous_log.txt" , O_CREAT | O_WRONLY | O_APPEND , 0666);
+    if(fd < 0)
+    {
+        perror("open(Marvellous_log.txt)");
+        return NULL;
+    }
 
-    char Welcome[] = "Marvellous System Logger";
+    // Log header with timestamp
+    char ts[64];
+    timestamp(ts , sizeof(ts));
 
-    write(fd , Welcome, strlen(Welcome));
+    char header[512];
+    int hn = snprintf(header , sizeof(header) , 
 
+    "\n============================= System Logger ============================= \n" 
+                "Log Created at : %s \n"
+                "Disk Path : %s | Interval : %d sec\n"
+    "\n========================================================================= \n"            
+
+    , ts , disk_path , interval_sec );
+
+    write(fd , header, (size_t)hn);
+
+    // Enter if ctrl+c is not arrived
     while(!stop_flag)
     {
+        double m = 0.0 , c = 0.0 , d = 0.0;
+
+        // Read shared snapshot safely
         pthread_mutex_lock(&mtx);
 
             d = snap.disk;
@@ -151,22 +269,42 @@ static void * logger_thread(void *arg)
             m = snap.mem;
 
         pthread_mutex_unlock(&mtx);
-        // Write the information of structure snap into the file   
-        // Prepare string using sprintf 
+        
+        // Prepare line with time stamp
+        timestamp(ts , sizeof(ts));
+
         char line[256];
-        // Write that string into log file 
+        int n = snprintf(line , sizeof(line) ,
+                         "[%s] CPU : %6.2f%% | MEM : %6.2f%% | DISK(%s) : %6.2f%%\n" , 
+                         ts , c , m , disk_path , d);
 
-        // write(fd , line , strlen(line));
+        // Terminal + file
 
-        // Sleep for interval 
-        for(i=0;i<interval_sec && !stop_flag; i++)
+        printf("%s" , line);
+        write(fd , line , (size_t) n);
+
+        // Sleep for interval (but allow clean stop quickly)
+        for(int i=0;i<interval_sec && !stop_flag; i++)
         {
             sleep(1);
         }
     }
 
-    close(fd);
+    // Footer with timestamp
+    timestamp(ts , sizeof(ts));
+    char footer[256];
 
+    int fn = snprintf(footer , sizeof(footer) , 
+                       
+    "\n===================================== Logger Stopped =====================================\n"
+            "Stopped at : %s \n"
+    "\n===================================== Logger Stopped =====================================\n"
+    , ts        
+);
+
+    write(fd , footer , (size_t)fn);
+
+    close(fd);
     return NULL;
 }
 
@@ -176,27 +314,32 @@ static void * logger_thread(void *arg)
 
 int main(int argc , char * argv[])
 {
+    // Argument parsing 
+
+    // ./myexe /home/Demo
     if(argc == 2)
     {
         disk_path = argv[1];
     }
+    // ./myexe /home/Demo 5
     else if(argc == 3)
     {
         disk_path = argv[1];
         interval_sec = atoi(argv[2]);
+
+        if(interval_sec <= 0)   interval_sec = 2;
     }
+    // else argc == 1 -> default
 
-    printf("Marvellous System Logger \n");
-
+    printf("System Logger \n");
     printf("Path is : %s \n",disk_path);
     printf("Interval is : %d\n",interval_sec);
+    printf("Press Ctrl+C to stop...\n");
 
     // Structure for handling ctrl+c
     struct sigaction sa;
     memset(&sa,0,sizeof(sa));
-
     sa.sa_handler = sigint_handler;
-
     sigaction(SIGINT , &sa , NULL);
 
     // Thread to collect the information
@@ -206,16 +349,27 @@ int main(int argc , char * argv[])
     pthread_t t_log;
     
     // create thread to collect information
-    pthread_create(&t_collect,NULL,collector_thread,NULL);
+    if(pthread_create(&t_collect,NULL,collector_thread,NULL) != 0)
+    {
+        perror("pthread_create(t_collect)");
+        return 1;
+    }
 
     // create thread to write data into log 
-    pthread_create(&t_log,NULL,logger_thread,NULL);
+    if(pthread_create(&t_log,NULL,logger_thread,NULL) != 0)
+    {
+        perror("pthread_create(t_log)");
+        stop_flag = 1;
+        pthread_join(t_collect , NULL);
+        return 1;
+    }
 
-    // Main thread waiting for child threads 
+    // Main thread waiting for child threads to terminate
     pthread_join(t_collect,NULL);
     pthread_join(t_log,NULL);
 
     printf("Marvellous System Logger terminating...\n");
+    printf("Log saved in Marvellous_log.txt\n");
 
     return 0;
 }
