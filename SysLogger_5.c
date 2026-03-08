@@ -193,7 +193,7 @@ static double disk_percent(char *path)
 // Thread proc for Thread which collects system information 
 static void * collector_thread(void *arg)
 {
-    double c = 0.0 , m = 0.0 , d= 0.0;
+    double c = 0.0 , m = 0.0 , d = 0.0;
     (void)arg;
 
     printf("Inside Collector thread \n");

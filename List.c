@@ -434,7 +434,16 @@ semaphore -> protection to critical section
 binary semaphore    -> 
 counting semaphore  ->
 
+process hooking
 
+process memory tracer - 
+Process Memory Inspector - 
+hooking a running process
 
+ps -aux
+
+./myexe & ->  asynchronous running of process in background 
+
+80 byte -> 1 line
 
 */
