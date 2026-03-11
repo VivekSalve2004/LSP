@@ -446,4 +446,7 @@ ps -aux
 
 80 byte -> 1 line
 
+systemctl status
+
+
 */
