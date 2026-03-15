@@ -448,5 +448,23 @@ ps -aux
 
 systemctl status
 
+gdb -> powerful debugger by GNU community
+
+gcc debug_1.c -o myexe -g
+gdb ./myexe
+run
+break main
+next
+print a
+next 
+print b
+
+step -> to enter a function use step
+
+
+
+strace ./myexe
+
+ptrace -> system call
 
 */
