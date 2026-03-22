@@ -3,8 +3,8 @@
 #include<unistd.h>
 #include<string.h>
 #include<sys/utsname.h>
-#include <dirent.h>
-#include <ctype.h>
+#include<dirent.h>
+#include<ctype.h>
 
 // ./unamex		
 //  argv[0] 			
@@ -16,6 +16,18 @@
 	Inside that directory open comm
 	Display name inside that file
 */
+
+int is_all_digits(const char *s)
+{
+    if (*s == '\0') return 0;       // empty string → no
+    while (*s)
+    {
+        if (!isdigit((unsigned char)*s))
+            return 0;
+        s++;
+    }
+    return 1;
+}
 
 int main(int argc, char *argv[])
 {
@@ -33,10 +45,10 @@ int main(int argc, char *argv[])
 
     while ((entry = readdir(dp))) 
 	{
-        if (isdigit(entry->d_name[0])) 
+        if (is_all_digits(entry->d_name)) 
 		{
-            char path[256];
-            char comm[256];
+            char path[1024];
+            char comm[1024];
             
             snprintf(path, sizeof(path), "/proc/%s/comm", entry->d_name);
 
