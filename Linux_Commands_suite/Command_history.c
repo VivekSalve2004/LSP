@@ -1,38 +1,73 @@
-// gcc Command_history.c -o history -lreadline
-// ./history
+// gcc Command_history.c -o historyx
+// ./historyx
 
-#include<stdio.h>
-#include<fcntl.h>
-#include<unistd.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
 
 #define SIZE 1024
 
-int main()
+/*
+ * ============================================================
+ *  historyx — Print Bash Command History
+ * ============================================================
+ *
+ *  Reads and displays the contents of ~/.bash_history using
+ *  low-level Linux system calls: open, read, write, close.
+ *
+ *  NOTE: Only shows commands saved to disk. Commands from the
+ *  current session not yet flushed will NOT appear.
+ *
+ *  Syscalls used: open, read, write, close
+ * ============================================================
+ */
+
+// argc = 1
+// argv[0] = ./historyx
+
+int main(void)
 {
-    int fd = 0;           
-    int iRet = 0;
-    char buffer[SIZE];   
-    char path[1024];
+    int      fd;
+    ssize_t  iRet;
+    char     buffer[SIZE];
+    char     path[SIZE];
 
-    sprintf(path, "%s/.bash_history", getenv("HOME"));
-
-    fd = open(path, O_RDONLY);
-
-    if (fd == -1) 
+    /* Build path to ~/.bash_history */
+    const char *home = getenv("HOME");
+    if (home == NULL)
     {
-        perror("Error : Shell History is inaccessible \n");
+        fprintf(stderr, "Error : HOME environment variable not set\n");
         return -1;
     }
 
-    printf("Reading history using system calls:\n");
+    snprintf(path, sizeof(path), "%s/.bash_history", home);
 
-    while ((iRet = read(fd, buffer, SIZE)) != 0) 
+    /* Open the history file */
+    fd = open(path, O_RDONLY);
+    if (fd == -1)
     {
-        write(1, buffer, iRet); 
+        perror(path);
+        return -1;
+    }
+
+    printf("Reading history using system calls:\n\n");
+
+    /* Read and write to stdout in chunks */
+    while ((iRet = read(fd, buffer, sizeof(buffer))) > 0)
+    {
+        write(STDOUT_FILENO, buffer, iRet);
+    }
+
+    /* Distinguish EOF (0) from read error (-1) */
+    if (iRet == -1)
+    {
+        perror("read");
+        close(fd);
+        return -1;
     }
 
     close(fd);
-
+    
     return 0;
 }
