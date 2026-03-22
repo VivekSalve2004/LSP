@@ -1,42 +1,55 @@
-#include<stdio.h>
-#include<fcntl.h>
-#include<unistd.h>
-#include<string.h>
-#include<dirent.h>
+// gcc Command_ls.c -o lsx
+// ./lsx
+
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <dirent.h>
 
 #define MAX_BUFFER_SIZE 1024
 
-// ./lsx 	
-//	argv[0] 
-// argc = 1
-
 /*
-	Open the current directory(".")
-	read all entries from that directory
-	print the names of files
-	close the directory
-*/
+ * ============================================================
+ *  lsx — List Directory Contents
+ * ============================================================
+ *
+ *  Lists all entries in the current directory using
+ *  low-level Linux directory syscalls: opendir, readdir,
+ *  closedir.
+ *
+ *  NOTE: Also shows hidden files (entries starting with '.')
+ *  including '.' (current dir) and '..' (parent dir).
+ *
+ *  Syscalls used: opendir, readdir, closedir
+ * ============================================================
+ */
+
+// argc = 1
+// argv[0] = ./lsx
 
 int main(int argc, char *argv[])
 {
-	char * path = ".";
-	DIR * dp = NULL;	
-	dp = opendir(path);
+    char *path = ".";
+    DIR  *dp   = NULL;
 
-	if(dp == NULL)
-	{
-		printf("Error : Unable to open directory\n");
-		return -1;
-	}
+    /* Open current directory */
+    dp = opendir(path);
+    if (dp == NULL)
+    {
+        printf("Error : Unable to open directory\n");
+        return -1;
+    }
 
-	struct dirent * dobj;
+    struct dirent *dobj;
 
-	while((dobj = readdir(dp)) != NULL)
-	{
-		printf("%s\n",dobj->d_name);
-	}
+    /* Read and print each directory entry */
+    while ((dobj = readdir(dp)) != NULL)
+    {
+        printf("%s\n", dobj->d_name);
+    }
 
-	closedir(dp);
+    closedir(dp);
 
-	return 0;
+    return 0;
 }
