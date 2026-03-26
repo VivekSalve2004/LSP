@@ -72,12 +72,16 @@ int main(int argc, char *argv[])
     {
         option = 3;
     }
+    else if(strcmp(argv[1], "-A") == 0)
+    {
+        option = 4;
+    }
     else
     {
         printf("Error : There is no such option\n");
         return -1;
     }
-
+    
     char *path = ".";
     DIR  *dp   = NULL;
 
@@ -138,9 +142,17 @@ int main(int argc, char *argv[])
                 printf("%s, ", dobj->d_name);
             }
         }
+        if(option == 4)
+        {
+            if(strcmp(dobj->d_name, ".") != 0 && strcmp(dobj->d_name, "..") != 0)
+            {
+                printf("%s\n", dobj->d_name);
+            }
+        }
     }
 
     printf("\n");
+    
     closedir(dp);
 
     return 0;
