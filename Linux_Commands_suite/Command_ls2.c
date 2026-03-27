@@ -196,6 +196,10 @@ int main(int argc, char *argv[])
     {
         option = 5;
     }
+    else if(strcmp(argv[1], "-s") == 0)
+    {
+        option = 6;
+    }
     else
     {
         printf("Error : There is no such option\n");
@@ -214,7 +218,7 @@ int main(int argc, char *argv[])
     }
 
     struct dirent *dobj;
-
+    int total = 0;
     /* Read and print each directory entry based on option */
     while((dobj = readdir(dp)) != NULL)
     {
@@ -278,7 +282,26 @@ int main(int argc, char *argv[])
 
             print_long(path, dobj->d_name);
         }
+        if(option == 6)
+        {
+            if(dobj->d_name[0] == '.')
+                continue;
+            struct stat st;
+            char fullpath[MAX_BUFFER_SIZE];
+            snprintf(fullpath, sizeof(fullpath), "./%s", dobj->d_name);
+            if(stat(fullpath, &st) == 0)
+            {
+                printf("%4lld %s\n", (long long)st.st_blocks / 2, dobj->d_name);
+                total += st.st_blocks / 2;
+            }
+            else
+            {
+                printf("%s\n", dobj->d_name);
+            }   
+        }
     }
+
+    printf("total %4lld blocks \n", (long long)total);
 
     printf("\n");
 
