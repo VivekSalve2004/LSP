@@ -1,10 +1,35 @@
-// gcc Command_ls2.c -o ls2x
-// ./ls2x
-// ./ls2x -a
-// ./ls2x -i
-// ./ls2x -m
-// ./ls2x -A
-// ./ls2x -l
+/*
+ * =======================================================================
+ *  Command_ls2.c - Linux ls command implementation with multiple options
+ * =======================================================================
+ *
+ *  Author: [Vivek Salve]
+ *  Date: March 28, 2026
+ *  Description: A custom implementation of the Linux 'ls' command that supports
+ *               various options for listing directory contents. This program
+ *               demonstrates low-level system programming using POSIX APIs.
+ *
+ *  Features:
+ *  - Supports multiple ls options: -a, -i, -m, -A, -l, -s
+ *  - Uses opendir/readdir/closedir for directory traversal
+ *  - Implements stat/lstat for file information
+ *  - Color-coded output for different file types
+ *  - Proper error handling and permission display
+ *
+ *  Compilation: gcc Command_ls2.c -o ls2x
+ *  Usage: ./ls2x [option]
+ *
+ *  Options:
+ *    (no option)  - List files (default, same as -a)
+ *    -a           - List all files including hidden (. and ..)
+ *    -i           - List files with inode numbers
+ *    -m           - Comma-separated list with color coding
+ *    -A           - List all files except . and ..
+ *    -l           - Long format listing with full metadata
+ *    -s           - Show file sizes in blocks
+ *
+ * =======================================================================
+ */
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -20,52 +45,11 @@
 
 #define MAX_BUFFER_SIZE 1024
 
-/*
- * ============================================================
- *  ls2x — List Directory Contents (with options)
- * ============================================================
- *
- *  Lists all entries in the current directory using
- *  low-level Linux directory syscalls: opendir, readdir,
- *  closedir.
- *
- *  Usage:
- *    ./ls2x         list all files (default)
- *    ./ls2x -a      list all files including hidden (. and ..)
- *    ./ls2x -i      list all files with inode numbers
- *    ./ls2x -m      list files comma-separated with colour coding
- *                   (blue = directory, green = executable)
- *    ./ls2x -A      list all files excluding . and ..
- *    ./ls2x -l      long format listing
- *                   (permissions, links, owner, group, size, time, name)
- *
- *  Options:
- *    option = 1 → ls -a  (print filename only, shows hidden)
- *    option = 2 → ls -i  (print inode number + filename)
- *    option = 3 → ls -m  (comma-separated, colour-coded, no hidden)
- *    option = 4 → ls -A  (all files except . and ..)
- *    option = 5 → ls -l  (long format with full file metadata)
- *
- *  NOTE:
- *    -a and -i show ALL entries including hidden files (. and ..)
- *    -A shows hidden files but skips . and ..
- *    -m hides dotfiles to match real ls -m behaviour
- *    -m and -l use ANSI colour codes — requires colour-capable terminal
- *    -l uses lstat() so symlinks show as 'l' not their target type
- *
- *  Syscalls used: opendir, readdir, closedir, stat, lstat
- *  Library calls: getpwuid, getgrgid, localtime, strftime
- * ============================================================
- */
-
-// argc = 1  →  ./ls2x
-// argc = 2  →  ./ls2x -a  OR  ./ls2x -i  OR  ./ls2x -m
-//           →  ./ls2x -A  OR  ./ls2x -l
-//              argv[0]         argv[1]
-
-/* ------------------------------------------------------------------ */
-/*  Print permission bits as 10-char string  e.g.  drwxr-xr-x         */
-/* ------------------------------------------------------------------ */
+////////////////////////////////////////////////////////////////////////////////
+// print_permissions - Convert file mode to permission string
+// Converts POSIX file mode bits to a human-readable 10-character string
+// showing file type and rwx permissions for user/group/others
+////////////////////////////////////////////////////////////////////////////////
 static void print_permissions(mode_t mode)
 {
     /* File type character */
@@ -93,19 +77,11 @@ static void print_permissions(mode_t mode)
     printf((mode & S_IXOTH) ? "x" : "-");
 }
 
-/* ------------------------------------------------------------------ */
-/*  Print one entry in long format (-l)                                 */
-/*                                                                      */
-/*  Output format:                                                      */
-/*  -rw-r--r--  1 vivek    vivek       1234 Jan 01 12:00 file.c        */
-/*  │           │ │        │           │    │             └─ filename   */
-/*  │           │ │        │           │    └─ modification time        */
-/*  │           │ │        │           └─ size in bytes                 */
-/*  │           │ │        └─ group name                                */
-/*  │           │ └─ owner name                                         */
-/*  │           └─ hard link count                                      */
-/*  └─ permissions (type + rwx for user/group/others)                  */
-/* ------------------------------------------------------------------ */
+////////////////////////////////////////////////////////////////////////////////
+// print_long - Display file information in long format
+// Shows detailed file metadata including permissions, links, owner, group,
+// size, modification time, and filename with color coding
+////////////////////////////////////////////////////////////////////////////////
 static void print_long(const char *dirpath, const char *name)
 {
     char fullpath[MAX_BUFFER_SIZE];
@@ -158,154 +134,202 @@ static void print_long(const char *dirpath, const char *name)
         printf(" %s\n", name);                      /* white : regular    */
 }
 
-/* ------------------------------------------------------------------ */
-/*  main                                                                */
-/* ------------------------------------------------------------------ */
-int main(int argc, char *argv[])
+////////////////////////////////////////////////////////////////////////////////
+// list_all_files - Option -a: List all files including hidden
+// Lists all directory entries including . and .. (hidden files)
+////////////////////////////////////////////////////////////////////////////////
+static void list_all_files(DIR *dp)
 {
-    int option = 0;
-    // option = 1 : ls -a (filenames only, includes hidden)
-    // option = 2 : ls -i (inode number + filename)
-    // option = 3 : ls -m (comma-separated, colour-coded, no dotfiles)
-    // option = 4 : ls -A (all except . and ..)
-    // option = 5 : ls -l (long format with full metadata)
+    struct dirent *dobj;
+    while((dobj = readdir(dp)) != NULL)
+    {
+        printf("%s\n", dobj->d_name);
+    }
+}
 
-    option = argc;
+////////////////////////////////////////////////////////////////////////////////
+// list_with_inodes - Option -i: List files with inode numbers
+// Displays inode number followed by filename for each entry
+////////////////////////////////////////////////////////////////////////////////
+static void list_with_inodes(DIR *dp)
+{
+    struct dirent *dobj;
+    while((dobj = readdir(dp)) != NULL)
+    {
+        printf("%ld\t%s\n", dobj->d_ino, dobj->d_name);
+    }
+}
 
+////////////////////////////////////////////////////////////////////////////////
+// list_comma_separated - Option -m: Comma-separated list
+// Lists files in comma-separated format without color coding
+////////////////////////////////////////////////////////////////////////////////
+static void list_comma_separated(DIR *dp)
+{
+    struct dirent *dobj;
+    while((dobj = readdir(dp)) != NULL)
+    {
+        /* Skip hidden files */
+        if(dobj->d_name[0] == '.')
+            continue;
+
+        printf("%s, ", dobj->d_name);
+    }
+    printf("\n");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// list_all_except_dots - Option -A: List all except . and ..
+// Lists all files except the current directory (.) and parent directory (..)
+////////////////////////////////////////////////////////////////////////////////
+static void list_all_except_dots(DIR *dp)
+{
+    struct dirent *dobj;
+    while((dobj = readdir(dp)) != NULL)
+    {
+        if(strcmp(dobj->d_name, ".") != 0 && strcmp(dobj->d_name, "..") != 0)
+        {
+            printf("%s\n", dobj->d_name);
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// list_long_format - Option -l: Long format listing
+// Displays detailed file information including permissions, ownership,
+// size, and modification time with color-coded filenames
+////////////////////////////////////////////////////////////////////////////////
+static void list_long_format(DIR *dp, const char *path)
+{
+    struct dirent *dobj;
+    while((dobj = readdir(dp)) != NULL)
+    {
+        /* Skip hidden files */
+        if(dobj->d_name[0] == '.')
+            continue;
+
+        print_long(path, dobj->d_name);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// list_with_blocks - Option -s: Show file sizes in blocks
+// Displays file sizes in 512-byte blocks followed by filename
+////////////////////////////////////////////////////////////////////////////////
+static void list_with_blocks(DIR *dp, int *total)
+{
+    struct dirent *dobj;
+    while((dobj = readdir(dp)) != NULL)
+    {
+        /* Skip hidden files */
+        if(dobj->d_name[0] == '.')
+            continue;
+
+        struct stat st;
+        char fullpath[MAX_BUFFER_SIZE];
+        snprintf(fullpath, sizeof(fullpath), "./%s", dobj->d_name);
+
+        if(stat(fullpath, &st) == 0)
+        {
+            printf("%4lld %s\n", (long long)st.st_blocks / 2, dobj->d_name);
+            *total += st.st_blocks / 2;
+        }
+        else
+        {
+            printf("%s\n", dobj->d_name);
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// parse_option - Parse command line arguments
+// Converts command line option string to internal option number
+////////////////////////////////////////////////////////////////////////////////
+static int parse_option(int argc, char *argv[])
+{
     if(argc == 1)
     {
-        option = 1;
+        return 1;  // Default: same as -a
     }
     else if(strcmp(argv[1], "-a") == 0)
     {
-        option = 1;
+        return 1;
     }
     else if(strcmp(argv[1], "-i") == 0)
     {
-        option = 2;
+        return 2;
     }
     else if(strcmp(argv[1], "-m") == 0)
     {
-        option = 3;
+        return 3;
     }
     else if(strcmp(argv[1], "-A") == 0)
     {
-        option = 4;
+        return 4;
     }
     else if(strcmp(argv[1], "-l") == 0)
     {
-        option = 5;
+        return 5;
     }
     else if(strcmp(argv[1], "-s") == 0)
     {
-        option = 6;
+        return 6;
     }
     else
     {
-        printf("Error : There is no such option\n");
+        printf("Error: There is no such option\n");
+        return -1;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// main - Program entry point
+// Main function that handles command line parsing and dispatches to appropriate
+// listing function based on the selected option
+////////////////////////////////////////////////////////////////////////////////
+int main(int argc, char *argv[])
+{
+    int option = parse_option(argc, argv);
+    if(option == -1)
+    {
         return -1;
     }
 
     char *path = ".";
-    DIR  *dp   = NULL;
-
-    /* Open current directory */
-    dp = opendir(path);
+    DIR *dp = opendir(path);
     if(dp == NULL)
     {
-        printf("Error : Unable to open directory\n");
+        printf("Error: Unable to open directory\n");
         return -1;
     }
 
-    struct dirent *dobj;
     int total = 0;
-    /* Read and print each directory entry based on option */
-    while((dobj = readdir(dp)) != NULL)
+
+    /* Dispatch to appropriate function based on option */
+    switch(option)
     {
-        if(option == 1)
-        {
-            /* -a : print filename only (includes . and ..) */
-            printf("%s\n", dobj->d_name);
-        }
-        if(option == 2)
-        {
-            /* -i : print inode number followed by filename */
-            printf("%ld\t%s\n", dobj->d_ino, dobj->d_name);
-        }
-        if(option == 3)
-        {
-            /* -m : comma-separated, colour-coded, skip hidden files */
-            if(dobj->d_name[0] == '.')
-                continue;
-
-            struct stat st;
-            char fullpath[MAX_BUFFER_SIZE];
-            snprintf(fullpath, sizeof(fullpath), "./%s", dobj->d_name);
-
-            if(stat(fullpath, &st) == 0)
-            {
-                if(S_ISDIR(st.st_mode))
-                {
-                    /* Directory — blue */
-                    printf("\033[1;34m%s\033[0m, ", dobj->d_name);
-                }
-                else if(st.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
-                {
-                    /* Executable — green */
-                    printf("\033[1;32m%s\033[0m, ", dobj->d_name);
-                }
-                else
-                {
-                    /* Regular file — no colour */
-                    printf("%s, ", dobj->d_name);
-                }
-            }
-            else
-            {
-                /* stat failed — print name without colour */
-                printf("%s, ", dobj->d_name);
-            }
-        }
-        if(option == 4)
-        {
-            /* -A : skip . and .. but show all other hidden files */
-            if(strcmp(dobj->d_name, ".") != 0 && strcmp(dobj->d_name, "..") != 0)
-            {
-                printf("%s\n", dobj->d_name);
-            }
-        }
-        if(option == 5)
-        {
-            /* -l : long format, skip hidden files */
-            if(dobj->d_name[0] == '.')
-                continue;
-
-            print_long(path, dobj->d_name);
-        }
-        if(option == 6)
-        {
-            if(dobj->d_name[0] == '.')
-                continue;
-            struct stat st;
-            char fullpath[MAX_BUFFER_SIZE];
-            snprintf(fullpath, sizeof(fullpath), "./%s", dobj->d_name);
-            if(stat(fullpath, &st) == 0)
-            {
-                printf("%4lld %s\n", (long long)st.st_blocks / 2, dobj->d_name);
-                total += st.st_blocks / 2;
-            }
-            else
-            {
-                printf("%s\n", dobj->d_name);
-            }   
-        }
+        case 1:  /* -a */
+            list_all_files(dp);
+            break;
+        case 2:  /* -i */
+            list_with_inodes(dp);
+            break;
+        case 3:  /* -m */
+            list_comma_separated(dp);
+            break;
+        case 4:  /* -A */
+            list_all_except_dots(dp);
+            break;
+        case 5:  /* -l */
+            list_long_format(dp, path);
+            break;
+        case 6:  /* -s */
+            list_with_blocks(dp, &total);
+            printf("total %4lld blocks\n", (long long)total);
+            break;
     }
 
-    printf("total %4lld blocks \n", (long long)total);
-
-    printf("\n");
-
     closedir(dp);
-
+    
     return 0;
 }
